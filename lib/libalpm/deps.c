@@ -44,6 +44,13 @@ void _alpm_dep_free(alpm_depend_t *dep)
 	FREE(dep);
 }
 
+void _alpm_optdep_free(alpm_optdepend_t *optdep)
+{
+	_alpm_dep_free(optdep->depend);
+	FREE(optdep->description);
+	FREE(optdep);
+}
+
 static alpm_depmissing_t *depmiss_new(const char *target, alpm_depend_t *dep,
 		const char *causingpkg)
 {
@@ -475,6 +482,44 @@ alpm_depend_t *_alpm_dep_dup(const alpm_depend_t *dep)
 	return newdep;
 }
 
+alpm_optdepend_t *_alpm_splitoptdep(const char *optstring)
+{
+	alpm_optdepend_t *optdep;
+	char *depstring;
+	const char *ptr;
+
+	ASSERT(optstring != NULL, return NULL);
+
+	CALLOC(optdep, 1, sizeof(alpm_optdepend_t), return NULL);
+
+	/* Note the extra space in ": " to avoid matching the epoch */
+	if((ptr = strstr(optstring, ": ")) == NULL) {
+		ptr = optstring + strlen(optstring);
+	}
+
+	STRNDUP(depstring, optstring, ptr - optstring, return NULL);
+	optdep->depend = _alpm_splitdep(depstring);
+	FREE(depstring);
+
+	if(*ptr != '\0') {
+		STRDUP(optdep->description, ptr + 2, return NULL);
+		optdep->description = _alpm_strtrim(optdep->description);
+	}
+
+	return optdep;
+}
+
+alpm_optdepend_t *_alpm_optdep_dup(const alpm_optdepend_t *optdep)
+{
+	alpm_optdepend_t *newdep;
+	CALLOC(newdep, 1, sizeof(alpm_optdepend_t), return NULL);
+
+	newdep->depend = _alpm_dep_dup(optdep->depend);
+	STRDUP(newdep->description, optdep->description, return NULL);
+
+	return newdep;
+}
+
 /* These parameters are messy. We check if this package, given a list of
  * targets and a db is safe to remove. We do NOT remove it if it is in the
  * target list, or if if the package was explictly installed and
@@ -871,5 +916,28 @@ char SYMEXPORT *alpm_dep_compute_string(const alpm_depend_t *dep)
 	snprintf(str, len, "%s%s%s", name, opr, ver);
 
 	return str;
+}
+
+/** Reverse of splitoptdep; make a optdep string from a alpm_optdepend_t struct.
+ * The string must be freed!
+ * @param optdep the optdepend to turn into a string
+ * @return a string-formatted optional dependency with description
+ */
+char SYMEXPORT *alpm_optdep_compute_string(const alpm_optdepend_t *optdep)
+{
+	ASSERT(optdep != NULL, return NULL);
+
+	char *depstring = alpm_dep_compute_string(optdep->depend);
+
+	if(optdep->description != NULL) {
+		char *str;
+		size_t len = strlen(depstring) + strlen(optdep->description) + 3;
+		MALLOC(str, len, return NULL);
+		snprintf(str, len, "%s: %s", depstring, optdep->description);
+		free(depstring);
+		return str;
+	}
+
+	return depstring;
 }
 /* vim: set ts=2 sw=2 noet: */

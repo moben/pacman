@@ -150,6 +150,12 @@ typedef struct _alpm_depend_t {
 	alpm_depmod_t mod;
 } alpm_depend_t;
 
+/** Optional dependency */
+typedef struct _alpm_optdepend_t {
+	alpm_depend_t *depend;
+	char *description;
+} alpm_optdepend_t;
+
 /** Missing dependency */
 typedef struct _alpm_depmissing_t {
 	char *target;
@@ -1102,6 +1108,12 @@ alpm_list_t *alpm_checkconflicts(alpm_handle_t *handle, alpm_list_t *pkglist);
  * @return a formatted string, e.g. "glibc>=2.12"
  */
 char *alpm_dep_compute_string(const alpm_depend_t *dep);
+
+/** Returns a newly allocated string representing the optional dependency information.
+ * @param dep a optional dependency info structure
+ * @return a formatted string, e.g. "sqlite: for Database support"
+ */
+char *alpm_optdep_compute_string(const alpm_optdepend_t *optdep);
 
 /** @} */
 
