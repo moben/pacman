@@ -1139,32 +1139,81 @@ void print_packages(const alpm_list_t *packages)
 	}
 }
 
-/* Helper function for comparing strings using the
- * alpm "compare func" signature */
-int str_cmp(const void *s1, const void *s2)
+/* Helper function for comparing optdepends using the
+ * alpm "compare func" signature. */
+static int opt_cmp(const void *o1, const void *o2)
 {
-	return strcmp(s1, s2);
+	const alpm_optdepend_t *od1 = o1;
+	const alpm_optdepend_t *od2 = o2;
+	int ret;
+
+	ret = strcmp(od1->depend->name, od2->depend->name);
+	if(ret == 0) {
+		ret = od1->depend->mod - od2->depend->mod;
+	}
+	if(ret == 0 && od1->depend->version != od2->depend->version) {
+		if(od1->depend->version && od2->depend->version) {
+			ret = strcmp(od1->depend->version, od2->depend->version);
+		} else if(!od1->depend->version && od2->depend->version) {
+			return -1;
+		} else if(od1->depend->version && !od2->depend->version) {
+			return  1;
+		}
+	}
+	if(ret == 0 && od1->description != od2->description) {
+		if(od1->description && od2->description) {
+			ret = strcmp(od1->description, od2->description);
+		} else if(!od1->description && od2->description) {
+			return -1;
+		} else if(od1->description && !od2->description) {
+			return  1;
+		}
+	}
+
+	return ret;
 }
 
 void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg)
 {
-	alpm_list_t *old = alpm_pkg_get_optdepends(oldpkg);
-	alpm_list_t *new = alpm_pkg_get_optdepends(newpkg);
-	alpm_list_t *optdeps = alpm_list_diff(new,old,str_cmp);
-	if(optdeps) {
-		printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
-		list_display_linebreak("   ", optdeps);
+	alpm_list_t *i, *old, *new, *optdeps, *optstrings = NULL;
+
+	old = alpm_pkg_get_optdepends(oldpkg);
+	new = alpm_pkg_get_optdepends(newpkg);
+	optdeps = alpm_list_diff(new, old, opt_cmp);
+
+	/* turn optdepends list into a text list */
+	for(i = optdeps; i; i = alpm_list_next(i)) {
+		alpm_optdepend_t *optdep = i->data;
+		optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
 	}
+
+	if(optstrings) {
+		printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
+		list_display_linebreak("   ", optstrings);
+	}
+
 	alpm_list_free(optdeps);
+	FREELIST(optstrings);
 }
 
 void display_optdepends(alpm_pkg_t *pkg)
 {
-	alpm_list_t *optdeps = alpm_pkg_get_optdepends(pkg);
-	if(optdeps) {
-		printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));
-		list_display_linebreak("   ", optdeps);
+	alpm_list_t *i, *optdeps, *optstrings = NULL;
+
+	optdeps = alpm_pkg_get_optdepends(pkg);
+
+	/* turn optdepends list into a text list */
+	for(i = optdeps; i; i = alpm_list_next(i)) {
+		alpm_optdepend_t *optdep = i->data;
+		optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
 	}
+
+	if(optstrings) {
+		printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));
+		list_display_linebreak("   ", optstrings);
+	}
+
+	FREELIST(optstrings);
 }
 
 static void display_repo_list(const char *dbname, alpm_list_t *list)

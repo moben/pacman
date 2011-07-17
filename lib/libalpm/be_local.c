@@ -517,6 +517,12 @@ char *_alpm_local_db_pkgpath(alpm_db_t *db, alpm_pkg_t *info, const char *filena
 	f = alpm_list_add(f, _alpm_splitdep(line)); \
 } while(1) /* note the while(1) and not (0) */
 
+#define READ_AND_SPLITOPTDEP(f) do { \
+	if(fgets(line, sizeof(line), fp) == NULL && !feof(fp)) goto error; \
+	if(_alpm_strip_newline(line) == 0) break; \
+	f = alpm_list_add(f, _alpm_splitoptdep(line)); \
+} while(1) /* note the while(1) and not (0) */
+
 static int local_db_read(alpm_pkg_t *info, alpm_dbinfrq_t inforeq)
 {
 	FILE *fp = NULL;
@@ -613,7 +619,7 @@ static int local_db_read(alpm_pkg_t *info, alpm_dbinfrq_t inforeq)
 			} else if(strcmp(line, "%DEPENDS%") == 0) {
 				READ_AND_SPLITDEP(info->depends);
 			} else if(strcmp(line, "%OPTDEPENDS%") == 0) {
-				READ_AND_STORE_ALL(info->optdepends);
+				READ_AND_SPLITOPTDEP(info->optdepends);
 			} else if(strcmp(line, "%CONFLICTS%") == 0) {
 				READ_AND_SPLITDEP(info->conflicts);
 			} else if(strcmp(line, "%PROVIDES%") == 0) {
@@ -824,7 +830,9 @@ int _alpm_local_db_write(alpm_db_t *db, alpm_pkg_t *info, alpm_dbinfrq_t inforeq
 		if(info->optdepends) {
 			fputs("%OPTDEPENDS%\n", fp);
 			for(lp = info->optdepends; lp; lp = lp->next) {
-				fprintf(fp, "%s\n", (char *)lp->data);
+				char *optstring = alpm_optdep_compute_string(lp->data);
+				fprintf(fp, "%s\n", optstring);
+				free(optstring);
 			}
 			fprintf(fp, "\n");
 		}

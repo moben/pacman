@@ -504,6 +504,12 @@ cleanup:
 	f = alpm_list_add(f, _alpm_splitdep(line)); \
 } while(1) /* note the while(1) and not (0) */
 
+#define READ_AND_SPLITOPTDEP(f) do { \
+	if(_alpm_archive_fgets(archive, &buf) != ARCHIVE_OK) goto error; \
+	if(_alpm_strip_newline(buf.line) == 0) break; \
+	f = alpm_list_add(f, _alpm_splitoptdep(line)); \
+} while(1) /* note the while(1) and not (0) */
+
 static int sync_db_read(alpm_db_t *db, struct archive *archive,
 		struct archive_entry *entry, alpm_pkg_t **likely_pkg)
 {
@@ -590,7 +596,7 @@ static int sync_db_read(alpm_db_t *db, struct archive *archive,
 			} else if(strcmp(line, "%DEPENDS%") == 0) {
 				READ_AND_SPLITDEP(pkg->depends);
 			} else if(strcmp(line, "%OPTDEPENDS%") == 0) {
-				READ_AND_STORE_ALL(pkg->optdepends);
+				READ_AND_SPLITOPTDEP(pkg->optdepends);
 			} else if(strcmp(line, "%CONFLICTS%") == 0) {
 				READ_AND_SPLITDEP(pkg->conflicts);
 			} else if(strcmp(line, "%PROVIDES%") == 0) {
