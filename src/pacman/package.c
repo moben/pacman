@@ -67,8 +67,8 @@ static void optdeplist_display(const char *title,
 
 /**
  * Display the details of a package.
- * Extra information entails 'required by' info for sync packages and backup
- * files info for local packages.
+ * Extra information entails 'required by' and 'optrequired by' info
+ * for sync packages and backup files info for local packages.
  * @param pkg package to display information for
  * @param from the type of package we are dealing with
  * @param extra should we show extra information
@@ -81,6 +81,7 @@ void dump_pkg_full(alpm_pkg_t *pkg, int extra)
 	const char *label;
 	double size;
 	alpm_list_t *requiredby = NULL;
+	alpm_list_t *optrequiredby = NULL;
 	alpm_pkgfrom_t from;
 
 	from = alpm_pkg_get_origin(pkg);
@@ -109,7 +110,8 @@ void dump_pkg_full(alpm_pkg_t *pkg, int extra)
 
 	if(extra || from == PKG_FROM_LOCALDB) {
 		/* compute this here so we don't get a pause in the middle of output */
-		requiredby = alpm_pkg_compute_requiredby(pkg, 0);
+		requiredby    = alpm_pkg_compute_requiredby(pkg, 0);
+		optrequiredby = alpm_pkg_compute_requiredby(pkg, 1);
 	}
 
 	/* actual output */
@@ -127,6 +129,7 @@ void dump_pkg_full(alpm_pkg_t *pkg, int extra)
 	optdeplist_display(_("Optional Deps  :"), alpm_pkg_get_optdepends(pkg));
 	if(extra || from == PKG_FROM_LOCALDB) {
 		list_display(_("Required By    :"), requiredby);
+		list_display(_("Optional For   :"), optrequiredby);
 	}
 	deplist_display(_("Conflicts With :"), alpm_pkg_get_conflicts(pkg));
 	deplist_display(_("Replaces       :"), alpm_pkg_get_replaces(pkg));
