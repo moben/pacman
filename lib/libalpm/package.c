@@ -382,7 +382,8 @@ int SYMEXPORT alpm_pkg_has_scriptlet(alpm_pkg_t *pkg)
 	return pkg->ops->has_scriptlet(pkg);
 }
 
-static void find_requiredby(alpm_pkg_t *pkg, alpm_db_t *db, alpm_list_t **reqs)
+static void find_requiredby(alpm_pkg_t *pkg, alpm_db_t *db,
+                            alpm_list_t **reqs, const int find_optdeps)
 {
 	const alpm_list_t *i;
 	pkg->handle->pm_errno = 0;
@@ -390,11 +391,23 @@ static void find_requiredby(alpm_pkg_t *pkg, alpm_db_t *db, alpm_list_t **reqs)
 	for(i = _alpm_db_get_pkgcache(db); i; i = i->next) {
 		alpm_pkg_t *cachepkg = i->data;
 		alpm_list_t *j;
-		for(j = alpm_pkg_get_depends(cachepkg); j; j = j->next) {
-			if(_alpm_depcmp(pkg, j->data)) {
-				const char *cachepkgname = cachepkg->name;
-				if(alpm_list_find_str(*reqs, cachepkgname) == NULL) {
-					*reqs = alpm_list_add(*reqs, strdup(cachepkgname));
+		if(find_optdeps) {
+			for(j = alpm_pkg_get_optdepends(cachepkg); j; j = j->next) {
+				alpm_optdepend_t *optdep = j->data;
+				if(_alpm_depcmp(pkg, optdep->depend)) {
+					const char *cachepkgname = cachepkg->name;
+					if(alpm_list_find_str(*reqs, cachepkgname) == NULL) {
+						*reqs = alpm_list_add(*reqs, strdup(cachepkgname));
+					}
+				}
+			}
+		} else {
+			for(j = alpm_pkg_get_depends(cachepkg); j; j = j->next) {
+				if(_alpm_depcmp(pkg, j->data)) {
+					const char *cachepkgname = cachepkg->name;
+					if(alpm_list_find_str(*reqs, cachepkgname) == NULL) {
+						*reqs = alpm_list_add(*reqs, strdup(cachepkgname));
+					}
 				}
 			}
 		}
@@ -402,7 +415,7 @@ static void find_requiredby(alpm_pkg_t *pkg, alpm_db_t *db, alpm_list_t **reqs)
 }
 
 /** Compute the packages requiring a given package. */
-alpm_list_t SYMEXPORT *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg)
+alpm_list_t SYMEXPORT *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg, const int find_optdeps)
 {
 	const alpm_list_t *i;
 	alpm_list_t *reqs = NULL;
@@ -413,17 +426,17 @@ alpm_list_t SYMEXPORT *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg)
 
 	if(pkg->origin == PKG_FROM_FILE) {
 		/* The sane option; search locally for things that require this. */
-		find_requiredby(pkg, pkg->handle->db_local, &reqs);
+		find_requiredby(pkg, pkg->handle->db_local, &reqs, find_optdeps);
 	} else {
 		/* We have a DB package. if it is a local package, then we should
 		 * only search the local DB; else search all known sync databases. */
 		db = pkg->origin_data.db;
 		if(db->status & DB_STATUS_LOCAL) {
-			find_requiredby(pkg, db, &reqs);
+			find_requiredby(pkg, db, &reqs, find_optdeps);
 		} else {
 			for(i = pkg->handle->dbs_sync; i; i = i->next) {
 				db = i->data;
-				find_requiredby(pkg, db, &reqs);
+				find_requiredby(pkg, db, &reqs, find_optdeps);
 			}
 			reqs = alpm_list_msort(reqs, alpm_list_count(reqs), _alpm_str_cmp);
 		}

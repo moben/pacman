@@ -280,6 +280,12 @@ Query Options[[QO]]
 	database(s).  Typically these are packages that were downloaded manually
 	and installed with '\--upgrade'.
 
+*-n, \--optdeps*::
+	When using the '-t' option with this flag, do not treat installed
+	optional dependencies as if they were normal dependencies. This option
+	can be used to list packages which were installed as dependencies but are
+	only optionally	used by other packages.
+
 *-o, \--owns* <file>::
 	Search for packages that own the specified file(s). The path can be
 	relative or absolute and one or more files can be specified.

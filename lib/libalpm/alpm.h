@@ -715,7 +715,7 @@ int alpm_pkg_vercmp(const char *a, const char *b);
  * @param pkg a package
  * @return the list of packages requiring pkg
  */
-alpm_list_t *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg);
+alpm_list_t *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg, const int find_optdeps);
 
 /** @name Package Property Accessors
  * Any pointer returned by these functions points to internal structures

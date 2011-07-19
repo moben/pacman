@@ -109,7 +109,7 @@ void dump_pkg_full(alpm_pkg_t *pkg, int extra)
 
 	if(extra || from == PKG_FROM_LOCALDB) {
 		/* compute this here so we don't get a pause in the middle of output */
-		requiredby = alpm_pkg_compute_requiredby(pkg);
+		requiredby = alpm_pkg_compute_requiredby(pkg, 0);
 	}
 
 	/* actual output */

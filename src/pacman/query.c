@@ -363,9 +363,15 @@ static int is_foreign(alpm_pkg_t *pkg)
 	return 0;
 }
 
-static int is_unrequired(alpm_pkg_t *pkg)
+static int is_unrequired(alpm_pkg_t *pkg, const int find_optdeps)
 {
-	alpm_list_t *requiredby = alpm_pkg_compute_requiredby(pkg);
+	alpm_list_t *requiredby;
+	if(find_optdeps) {
+		requiredby = alpm_pkg_compute_requiredby(pkg, 1);
+	} else {
+		requiredby = alpm_pkg_compute_requiredby(pkg, 0);
+	}
+
 	if(requiredby == NULL) {
 		return 1;
 	}
@@ -390,7 +396,11 @@ static int filter(alpm_pkg_t *pkg)
 		return 0;
 	}
 	/* check if this pkg is unrequired */
-	if(config->op_q_unrequired && !is_unrequired(pkg)) {
+	if(config->op_q_unrequired && !is_unrequired(pkg, 0)) {
+		return 0;
+	}
+	/* check if this pkg is optionally required */
+	if(config->op_q_unrequired && !config->op_q_optdeps && !is_unrequired(pkg, 1)) {
 		return 0;
 	}
 	/* check if this pkg is outdated */

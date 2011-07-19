@@ -383,7 +383,7 @@ static void walk_reverse_deps(alpm_list_t *dblist, alpm_pkg_t *pkg, int depth)
 	}
 
 	walked = alpm_list_add(walked, (void *)alpm_pkg_get_name(pkg));
-	required_by = alpm_pkg_compute_requiredby(pkg);
+	required_by = alpm_pkg_compute_requiredby(pkg, 0);
 
 	for(i = required_by; i; i = alpm_list_next(i)) {
 		const char *pkgname = i->data;
