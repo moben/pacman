@@ -1173,19 +1173,37 @@ static int opt_cmp(const void *o1, const void *o2)
 	return ret;
 }
 
+/** Creates a newly-allocated list of optdepend strings from a list of optdepends.
+ * The list must be freed!
+ * @param optlist an alpm_list_t of optdepends to turn into a strings
+ * @return an alpm_list_t of optdepend formatted strings with description
+ */
+alpm_list_t *optdep_string_list(const alpm_list_t *optlist)
+{
+	alpm_list_t *optstrings = NULL;
+	alpm_optdepend_t *optdep;
+	alpm_db_t *db_local = alpm_option_get_localdb(config->handle);
+
+	/* turn optdepends list into a text list. */
+	for( ; optlist; optlist = alpm_list_next(optlist)) {
+		optdep = optlist->data;
+		if(alpm_db_get_pkg(db_local, optdep->depend->name) == NULL) {
+			optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
+		}
+	}
+
+	return optstrings;
+}
+
 void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg)
 {
-	alpm_list_t *i, *old, *new, *optdeps, *optstrings = NULL;
+	alpm_list_t *old, *new, *optdeps, *optstrings;
 
 	old = alpm_pkg_get_optdepends(oldpkg);
 	new = alpm_pkg_get_optdepends(newpkg);
 	optdeps = alpm_list_diff(new, old, opt_cmp);
 
-	/* turn optdepends list into a text list */
-	for(i = optdeps; i; i = alpm_list_next(i)) {
-		alpm_optdepend_t *optdep = i->data;
-		optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
-	}
+	optstrings = optdep_string_list(optdeps);
 
 	if(optstrings) {
 		printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
@@ -1198,15 +1216,9 @@ void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg)
 
 void display_optdepends(alpm_pkg_t *pkg)
 {
-	alpm_list_t *i, *optdeps, *optstrings = NULL;
+	alpm_list_t *optstrings;
 
-	optdeps = alpm_pkg_get_optdepends(pkg);
-
-	/* turn optdepends list into a text list */
-	for(i = optdeps; i; i = alpm_list_next(i)) {
-		alpm_optdepend_t *optdep = i->data;
-		optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
-	}
+	optstrings = optdep_string_list(alpm_pkg_get_optdepends(pkg));
 
 	if(optstrings) {
 		printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));
