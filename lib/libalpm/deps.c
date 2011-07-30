@@ -85,6 +85,19 @@ static int _alpm_dep_edge(alpm_pkg_t *pkg1, alpm_pkg_t *pkg2)
 	return 0;
 }
 
+/* Does pkg1 optdepend on pkg2, ie. does pkg2 satisfy a optional dependency of pkg1? */
+static int _alpm_optdep_edge(alpm_pkg_t *pkg1, alpm_pkg_t *pkg2)
+{
+	alpm_list_t *i;
+	for(i = alpm_pkg_get_optdepends(pkg1); i; i = i->next) {
+		alpm_optdepend_t *optdep = i->data;
+		if(_alpm_depcmp(pkg2, optdep->depend)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /* Convert a list of alpm_pkg_t * to a graph structure,
  * with a edge for each dependency.
  * Returns a list of vertices (one vertex = one package)
@@ -554,6 +567,9 @@ static int can_remove_package(alpm_db_t *db, alpm_pkg_t *pkg,
 		if(_alpm_dep_edge(lpkg, pkg) && !_alpm_pkg_find(targets, lpkg->name)) {
 			return 0;
 		}
+		if(_alpm_optdep_edge(lpkg, pkg) && !_alpm_pkg_find(targets, lpkg->name)) {
+			return 0;
+		}
 	}
 
 	/* it's ok to remove */
@@ -583,7 +599,7 @@ int _alpm_recursedeps(alpm_db_t *db, alpm_list_t *targs, int include_explicit)
 		alpm_pkg_t *pkg = i->data;
 		for(j = _alpm_db_get_pkgcache(db); j; j = j->next) {
 			alpm_pkg_t *deppkg = j->data;
-			if(_alpm_dep_edge(pkg, deppkg)
+			if((_alpm_dep_edge(pkg, deppkg) || _alpm_optdep_edge(pkg, deppkg))
 					&& can_remove_package(db, deppkg, targs, include_explicit)) {
 				alpm_pkg_t *copy;
 				_alpm_log(db->handle, ALPM_LOG_DEBUG, "adding '%s' to the targets\n",
