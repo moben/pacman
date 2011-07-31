@@ -657,8 +657,16 @@ int table_display(const char *title, const alpm_list_t *header,
 
 void list_display(const char *title, const alpm_list_t *list)
 {
+	list_display_extra(title, list, NULL, NULL);
+}
+
+void list_display_extra(const char *title, const alpm_list_t *list,
+                        const char *delim, const char *after)
+{
 	const alpm_list_t *i;
 	size_t len = 0;
+
+	delim = delim ? delim : "  ";
 
 	if(title) {
 		len = string_length(title) + 1;
@@ -666,7 +674,7 @@ void list_display(const char *title, const alpm_list_t *list)
 	}
 
 	if(!list) {
-		printf("%s\n", _("None"));
+		printf("%s", _("None"));
 	} else {
 		const unsigned short maxcols = getcols();
 		size_t cols = len;
@@ -680,20 +688,25 @@ void list_display(const char *title, const alpm_list_t *list)
 			if(maxcols > len && cols + s + 2 >= maxcols) {
 				size_t j;
 				cols = len;
-				printf("\n");
+				putchar('\n');
 				for (j = 1; j <= len; j++) {
-					printf(" ");
+					putchar(' ');
 				}
 			} else if(cols != len) {
-				/* 2 spaces are added if this is not the first element on a line. */
-				printf("  ");
-				cols += 2;
+				/* delimiter is added if this is not the first element on a line. */
+				fputs(delim, stdout);
+				cols += strlen(delim);
 			}
 			fputs(str, stdout);
 			cols += s;
 		}
-		putchar('\n');
 	}
+
+	if(after) {
+		fputs(after, stdout);
+	}
+
+	putchar('\n');
 }
 
 void list_display_linebreak(const char *title, const alpm_list_t *list)

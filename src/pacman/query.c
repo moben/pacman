@@ -488,7 +488,16 @@ static int display(alpm_pkg_t *pkg)
 	if(!config->op_q_info && !config->op_q_list
 			&& !config->op_q_changelog && !config->op_q_check) {
 		if(!config->quiet) {
-			printf("%s %s\n", alpm_pkg_get_name(pkg), alpm_pkg_get_version(pkg));
+			printf("%s %s", alpm_pkg_get_name(pkg), alpm_pkg_get_version(pkg));
+
+			alpm_list_t *optrequires;
+			if(config->op_q_unrequired && config->op_q_optdeps &&
+				(optrequires = alpm_pkg_compute_requiredby(pkg, 1)) != NULL) {
+				list_display_extra(_(" (optdepend for:"), optrequires, ", ", ")");
+				FREELIST(optrequires);
+			} else {
+				printf("\n");
+			}
 		} else {
 			printf("%s\n", alpm_pkg_get_name(pkg));
 		}
