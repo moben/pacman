@@ -162,6 +162,8 @@ typedef struct _alpm_depmissing_t {
 	alpm_depend_t *depend;
 	/* this is used in case of remove dependency error only */
 	char *causingpkg;
+	/* this is used for optdepends only */
+	char *description;
 } alpm_depmissing_t;
 
 /** Conflict */
@@ -1096,7 +1098,7 @@ int alpm_remove_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg);
  */
 
 alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist,
-		alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
+		alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps, int consider_optdeps);
 alpm_pkg_t *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstring);
 alpm_pkg_t *alpm_find_dbs_satisfier(alpm_handle_t *handle,
 		alpm_list_t *dbs, const char *depstring);
@@ -1184,6 +1186,7 @@ typedef enum _alpm_errno_t {
 	ALPM_ERR_DLT_PATCHFAILED,
 	/* Dependencies */
 	ALPM_ERR_UNSATISFIED_DEPS,
+	ALPM_ERR_UNSATISFIED_OPTDEPS,
 	ALPM_ERR_CONFLICTING_DEPS,
 	ALPM_ERR_FILE_CONFLICTS,
 	/* Misc */

@@ -101,6 +101,7 @@ static alpm_list_t *check_arch(alpm_handle_t *handle, alpm_list_t *pkgs)
 int SYMEXPORT alpm_trans_prepare(alpm_handle_t *handle, alpm_list_t **data)
 {
 	alpm_trans_t *trans;
+	int retval = 0;
 
 	/* Sanity checks */
 	CHECK_HANDLE(handle, return -1);
@@ -127,7 +128,12 @@ int SYMEXPORT alpm_trans_prepare(alpm_handle_t *handle, alpm_list_t **data)
 	if(trans->add == NULL) {
 		if(_alpm_remove_prepare(handle, data) == -1) {
 			/* pm_errno is set by _alpm_remove_prepare() */
-			return -1;
+			/* UNSATISFIED_OPTDEPS is nonfatal. */
+			if(alpm_errno(handle) == ALPM_ERR_UNSATISFIED_OPTDEPS) {
+				retval = -1;
+			} else {
+			  return -1;
+			}
 		}
 	}	else {
 		if(_alpm_sync_prepare(handle, data) == -1) {
@@ -138,7 +144,7 @@ int SYMEXPORT alpm_trans_prepare(alpm_handle_t *handle, alpm_list_t **data)
 
 	trans->state = STATE_PREPARED;
 
-	return 0;
+	return retval;
 }
 
 /** Commit a transaction. */

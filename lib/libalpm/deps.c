@@ -52,7 +52,7 @@ void _alpm_optdep_free(alpm_optdepend_t *optdep)
 }
 
 static alpm_depmissing_t *depmiss_new(const char *target, alpm_depend_t *dep,
-		const char *causingpkg)
+		const char *causingpkg, const char *description)
 {
 	alpm_depmissing_t *miss;
 
@@ -61,6 +61,7 @@ static alpm_depmissing_t *depmiss_new(const char *target, alpm_depend_t *dep,
 	STRDUP(miss->target, target, return NULL);
 	miss->depend = _alpm_dep_dup(dep);
 	STRDUP(miss->causingpkg, causingpkg, return NULL);
+	STRDUP(miss->description, description, return NULL);
 
 	return miss;
 }
@@ -70,6 +71,7 @@ void _alpm_depmiss_free(alpm_depmissing_t *miss)
 	_alpm_dep_free(miss->depend);
 	FREE(miss->target);
 	FREE(miss->causingpkg);
+	FREE(miss->description);
 	FREE(miss);
 }
 
@@ -283,11 +285,12 @@ alpm_pkg_t SYMEXPORT *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstri
  * @param remove an alpm_list_t* of packages to be removed
  * @param upgrade an alpm_list_t* of packages to be upgraded (remove-then-upgrade)
  * @param reversedeps handles the backward dependencies
+ * @param consider_optdeps handles optional dependencies instead of normal ones
  * @return an alpm_list_t* of alpm_depmissing_t pointers.
  */
 alpm_list_t SYMEXPORT *alpm_checkdeps(alpm_handle_t *handle,
 		alpm_list_t *pkglist, alpm_list_t *remove, alpm_list_t *upgrade,
-		int reversedeps)
+		int reversedeps, int consider_optdeps)
 {
 	alpm_list_t *i, *j;
 	alpm_list_t *dblist = NULL, *modified = NULL;
@@ -326,7 +329,7 @@ alpm_list_t SYMEXPORT *alpm_checkdeps(alpm_handle_t *handle,
 				_alpm_log(handle, ALPM_LOG_DEBUG, "checkdeps: missing dependency '%s' for package '%s'\n",
 						missdepstring, tp->name);
 				free(missdepstring);
-				miss = depmiss_new(tp->name, depend, NULL);
+				miss = depmiss_new(tp->name, depend, NULL, NULL);
 				baddeps = alpm_list_add(baddeps, miss);
 			}
 			release_filtered_depend(depend, nodepversion);
@@ -338,8 +341,17 @@ alpm_list_t SYMEXPORT *alpm_checkdeps(alpm_handle_t *handle,
 		 * the packages listed in the requiredby field. */
 		for(i = dblist; i; i = i->next) {
 			alpm_pkg_t *lp = i->data;
-			for(j = alpm_pkg_get_depends(lp); j; j = j->next) {
-				alpm_depend_t *depend = j->data;
+			j = consider_optdeps ? alpm_pkg_get_optdepends(lp) : alpm_pkg_get_depends(lp);
+			for(; j; j = j->next) {
+				alpm_depend_t *depend;
+				const char *description = NULL;
+				if(consider_optdeps) {
+					alpm_optdepend_t *optdep = j->data;
+					depend = optdep->depend;
+					description = optdep->description;
+				} else {
+					depend = j->data;
+				}
 				depend = filtered_depend(depend, nodepversion);
 				alpm_pkg_t *causingpkg = find_dep_satisfier(modified, depend);
 				/* we won't break this depend, if it is already broken, we ignore it */
@@ -350,10 +362,15 @@ alpm_list_t SYMEXPORT *alpm_checkdeps(alpm_handle_t *handle,
 				   !find_dep_satisfier(dblist, depend)) {
 					alpm_depmissing_t *miss;
 					char *missdepstring = alpm_dep_compute_string(depend);
-					_alpm_log(handle, ALPM_LOG_DEBUG, "checkdeps: transaction would break '%s' dependency of '%s'\n",
-							missdepstring, lp->name);
+					if(consider_optdeps) {
+						_alpm_log(handle, ALPM_LOG_DEBUG, "checkdeps: transaction would break '%s' optional dependency of '%s'\n",
+											missdepstring, lp->name);
+					} else {
+						_alpm_log(handle, ALPM_LOG_DEBUG, "checkdeps: transaction would break '%s' dependency of '%s'\n",
+											missdepstring, lp->name);
+					}
 					free(missdepstring);
-					miss = depmiss_new(lp->name, depend, causingpkg->name);
+					miss = depmiss_new(lp->name, depend, causingpkg->name, description);
 					baddeps = alpm_list_add(baddeps, miss);
 				}
 				release_filtered_depend(depend, nodepversion);
@@ -801,7 +818,7 @@ int _alpm_resolvedeps(alpm_handle_t *handle, alpm_list_t *localpkgs,
 	for(i = alpm_list_last(*packages); i; i = i->next) {
 		alpm_pkg_t *tpkg = i->data;
 		targ = alpm_list_add(NULL, tpkg);
-		deps = alpm_checkdeps(handle, localpkgs, remove, targ, 0);
+		deps = alpm_checkdeps(handle, localpkgs, remove, targ, 0, 0);
 		alpm_list_free(targ);
 
 		for(j = deps; j; j = j->next) {

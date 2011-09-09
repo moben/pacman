@@ -111,8 +111,8 @@ int pacman_remove(alpm_list_t *targets)
 	/* Step 2: prepare the transaction based on its type, targets and flags */
 	if(alpm_trans_prepare(config->handle, &data) == -1) {
 		alpm_errno_t err = alpm_errno(config->handle);
-		pm_printf(ALPM_LOG_ERROR, _("failed to prepare transaction (%s)\n"),
-		        alpm_strerror(err));
+		retval = 1;
+
 		switch(err) {
 			case ALPM_ERR_PKG_INVALID_ARCH:
 				for(i = data; i; i = alpm_list_next(i)) {
@@ -128,12 +128,27 @@ int pacman_remove(alpm_list_t *targets)
 					free(depstring);
 				}
 				break;
+			case ALPM_ERR_UNSATISFIED_OPTDEPS:
+				for(i = data; i; i = alpm_list_next(i)) {
+					alpm_depmissing_t *miss = i->data;
+					char *depstring = alpm_dep_compute_string(miss->depend);
+					if(miss->description) {
+						printf(_(":: %s: optionally requires %s (%s)\n"), miss->target, depstring, miss->description);
+					} else {
+						printf(_(":: %s: optionally requires %s\n"), miss->target, depstring);
+					}
+					free(depstring);
+				}
+				retval = 0;
+				break;
 			default:
 				break;
 		}
 		FREELIST(data);
-		retval = 1;
-		goto cleanup;
+		if(retval) {
+			pm_printf(ALPM_LOG_ERROR, _("failed to prepare transaction (%s)\n"), alpm_strerror(err));
+			goto cleanup;
+		}
 	}
 
 	/* Search for holdpkg in target list */

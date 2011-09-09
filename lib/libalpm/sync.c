@@ -605,7 +605,7 @@ int _alpm_sync_prepare(alpm_handle_t *handle, alpm_list_t **data)
 	if(!(trans->flags & ALPM_TRANS_FLAG_NODEPS)) {
 		_alpm_log(handle, ALPM_LOG_DEBUG, "checking dependencies\n");
 		deps = alpm_checkdeps(handle, _alpm_db_get_pkgcache(handle->db_local),
-				trans->remove, trans->add, 1);
+				trans->remove, trans->add, 1, 0);
 		if(deps) {
 			handle->pm_errno = ALPM_ERR_UNSATISFIED_DEPS;
 			ret = -1;

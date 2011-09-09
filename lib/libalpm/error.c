@@ -136,6 +136,8 @@ const char SYMEXPORT *alpm_strerror(alpm_errno_t err)
 		/* Dependencies */
 		case ALPM_ERR_UNSATISFIED_DEPS:
 			return _("could not satisfy dependencies");
+		case ALPM_ERR_UNSATISFIED_OPTDEPS:
+			return _("could not satisfy optional dependencies");
 		case ALPM_ERR_CONFLICTING_DEPS:
 			return _("conflicting dependencies");
 		case ALPM_ERR_FILE_CONFLICTS:

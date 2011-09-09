@@ -102,7 +102,7 @@ static int remove_prepare_cascade(alpm_handle_t *handle, alpm_list_t *lp)
 		alpm_list_free_inner(lp, (alpm_list_fn_free)_alpm_depmiss_free);
 		alpm_list_free(lp);
 		lp = alpm_checkdeps(handle, _alpm_db_get_pkgcache(handle->db_local),
-				trans->remove, NULL, 1);
+				trans->remove, NULL, 1, 0);
 	}
 	return 0;
 }
@@ -133,7 +133,7 @@ static void remove_prepare_keep_needed(alpm_handle_t *handle, alpm_list_t *lp)
 		alpm_list_free_inner(lp, (alpm_list_fn_free)_alpm_depmiss_free);
 		alpm_list_free(lp);
 		lp = alpm_checkdeps(handle, _alpm_db_get_pkgcache(handle->db_local),
-				trans->remove, NULL, 1);
+				trans->remove, NULL, 1, 0);
 	}
 }
 
@@ -164,7 +164,7 @@ int _alpm_remove_prepare(alpm_handle_t *handle, alpm_list_t **data)
 		EVENT(handle, ALPM_EVENT_CHECKDEPS_START, NULL, NULL);
 
 		_alpm_log(handle, ALPM_LOG_DEBUG, "looking for unsatisfied dependencies\n");
-		lp = alpm_checkdeps(handle, _alpm_db_get_pkgcache(db), trans->remove, NULL, 1);
+		lp = alpm_checkdeps(handle, _alpm_db_get_pkgcache(db), trans->remove, NULL, 1, 0);
 		if(lp != NULL) {
 
 			if(trans->flags & ALPM_TRANS_FLAG_CASCADE) {
@@ -206,6 +206,16 @@ int _alpm_remove_prepare(alpm_handle_t *handle, alpm_list_t **data)
 
 	if(!(trans->flags & ALPM_TRANS_FLAG_NODEPS)) {
 		EVENT(handle, ALPM_EVENT_CHECKDEPS_DONE, NULL, NULL);
+		lp = alpm_checkdeps(handle, _alpm_db_get_pkgcache(db), trans->remove, NULL, 1, 1);
+		if(lp != NULL) {
+			if(data) {
+				*data = lp;
+			} else {
+				alpm_list_free_inner(lp, (alpm_list_fn_free)_alpm_depmiss_free);
+				alpm_list_free(lp);
+			}
+			RET_ERR(handle, ALPM_ERR_UNSATISFIED_OPTDEPS, -1);
+		}
 	}
 
 	return 0;
