@@ -367,6 +367,8 @@ static int process_handleoptdeps(alpm_list_t *actions) {
 		const char *action = i->data;
 		if(strcmp(action, "ShowAll") == 0) {
 			config->handleoptdeps |= PM_OPTDEPS_SHOWALL;
+		} else if(strcmp(action, "Install") == 0) {
+			config->handleoptdeps |= PM_OPTDEPS_INSTALL;
 		} else {
 			pm_printf(ALPM_LOG_ERROR, _("invalid action for 'HandleOptdeps' : '%s'\n"),
 					action);

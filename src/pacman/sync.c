@@ -595,9 +595,14 @@ static alpm_db_t *get_db(const char *dbname)
 	return NULL;
 }
 
-static int process_pkg(alpm_pkg_t *pkg)
+static int process_pkg(alpm_pkg_t *pkg, int as_dep)
 {
-	int ret = alpm_add_pkg(config->handle, pkg);
+	int ret;
+	if(as_dep) {
+		ret = alpm_add_pkg(config->handle, pkg, ALPM_PKG_REASON_DEPEND);
+	} else {
+		ret = alpm_add_pkg(config->handle, pkg, ALPM_PKG_REASON_EXPLICIT);
+	}
 
 	if(ret == -1) {
 		alpm_errno_t err = alpm_errno(config->handle);
@@ -613,6 +618,34 @@ static int process_pkg(alpm_pkg_t *pkg)
 		}
 	}
 	config->explicit_adds = alpm_list_add(config->explicit_adds, pkg);
+	return 0;
+}
+
+static int process_optdeps(alpm_list_t *dblist, alpm_pkg_t *pkg)
+{
+	if(config->handleoptdeps & PM_OPTDEPS_INSTALL) {
+		alpm_list_t *optdeps = alpm_pkg_get_optdepends(pkg);
+		alpm_list_t *i;
+
+		for(i = optdeps; i; i = alpm_list_next(i)) {
+			alpm_optdepend_t *optdep = i->data;
+			char *depstring = alpm_dep_compute_string(optdep->depend);
+			alpm_pkg_t *pkg = alpm_find_dbs_satisfier(config->handle, dblist, depstring);
+			free(depstring);
+
+			if(alpm_errno(config->handle) == ALPM_ERR_PKG_IGNORED) {
+				pm_printf(ALPM_LOG_WARNING, _("skipping optdepend: %s\n"), optdep->depend->name);
+				continue;
+			}
+
+			if(pkg) {
+				if(process_pkg(pkg, 1) == 1) {
+					return 1;
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -649,7 +682,11 @@ static int process_group(alpm_list_t *dbs, const char *group)
 				continue;
 			alpm_pkg_t *pkg = i->data;
 
-			if(process_pkg(pkg) == 1) {
+			if(process_pkg(pkg, 0) == 1) {
+				ret = 1;
+				free(array);
+				goto cleanup;
+			} else if(process_optdeps(dbs, pkg) == 1) {
 				ret = 1;
 				free(array);
 				goto cleanup;
@@ -660,7 +697,10 @@ static int process_group(alpm_list_t *dbs, const char *group)
 		for(i = pkgs; i; i = alpm_list_next(i)) {
 			alpm_pkg_t *pkg = i->data;
 
-			if(process_pkg(pkg) == 1) {
+			if(process_pkg(pkg, 0) == 1) {
+				ret = 1;
+				goto cleanup;
+			} else if(process_optdeps(dbs, pkg) == 1) {
 				ret = 1;
 				goto cleanup;
 			}
@@ -674,6 +714,7 @@ cleanup:
 static int process_targname(alpm_list_t *dblist, const char *targname)
 {
 	alpm_pkg_t *pkg = alpm_find_dbs_satisfier(config->handle, dblist, targname);
+	int retval = 0;
 
 	/* #FS#23342 - skip ignored packages when user says no */
 	if(alpm_errno(config->handle) == ALPM_ERR_PKG_IGNORED) {
@@ -682,7 +723,11 @@ static int process_targname(alpm_list_t *dblist, const char *targname)
 	}
 
 	if(pkg) {
-		return process_pkg(pkg);
+		retval = process_pkg(pkg, 0);
+		if(retval == 0) {
+			retval = process_optdeps(dblist, pkg);
+		}
+		return retval;
 	}
 	/* fallback on group */
 	return process_group(dblist, targname);

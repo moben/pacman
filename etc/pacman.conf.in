@@ -36,7 +36,7 @@ Architecture = auto
 CheckSpace
 #VerbosePkgLists
 
-#HandleOptdeps = ShowAll
+#HandleOptdeps = ShowAll Install
 
 # PGP signature checking
 #SigLevel = Optional

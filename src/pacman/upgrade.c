@@ -82,7 +82,7 @@ int pacman_upgrade(alpm_list_t *targets)
 			trans_release();
 			return 1;
 		}
-		if(alpm_add_pkg(config->handle, pkg) == -1) {
+		if(alpm_add_pkg(config->handle, pkg, ALPM_PKG_REASON_EXPLICIT) == -1) {
 			pm_printf(ALPM_LOG_ERROR, "'%s': %s\n",
 					targ, alpm_strerror(alpm_errno(config->handle)));
 			alpm_pkg_free(pkg);

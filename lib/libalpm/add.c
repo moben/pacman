@@ -50,7 +50,7 @@
 #include "handle.h"
 
 /** Add a package to the transaction. */
-int SYMEXPORT alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg)
+int SYMEXPORT alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg, alpm_pkgreason_t reason)
 {
 	const char *pkgname, *pkgver;
 	alpm_trans_t *trans;
@@ -98,7 +98,7 @@ int SYMEXPORT alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg)
 	}
 
 	/* add the package to the transaction */
-	pkg->reason = ALPM_PKG_REASON_EXPLICIT;
+	pkg->reason = reason;
 	_alpm_log(handle, ALPM_LOG_DEBUG, "adding package %s-%s to the transaction add list\n",
 						pkgname, pkgver);
 	trans->add = alpm_list_add(trans->add, pkg);

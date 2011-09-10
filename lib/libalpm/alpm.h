@@ -1082,7 +1082,7 @@ int alpm_sync_sysupgrade(alpm_handle_t *handle, int enable_downgrade);
  * @param pkg the package to add
  * @return 0 on success, -1 on error (pm_errno is set accordingly)
  */
-int alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg);
+int alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg, alpm_pkgreason_t reason);
 
 /** Add a package removal action to the transaction.
  * @param handle the context handle
