@@ -128,6 +128,8 @@ static void usage(int op, const char * const myname)
 			addlist(_("  -n, --nosave         remove configuration files\n"));
 			addlist(_("  -s, --recursive      remove unnecessary dependencies\n"
 			          "                       (-ss includes explicitly installed dependencies)\n"));
+			addlist(_("  -o,                  remove optional dependencies,\n"
+			          "     --recurse-optdeps even if they might be used by other packages\n"));
 			addlist(_("  -u, --unneeded       remove unneeded packages\n"));
 		} else if(op == PM_OP_UPGRADE) {
 			printf("%s:  %s {-U --upgrade} [%s] <%s>\n", str_usg, myname, str_opt, str_file);
@@ -510,6 +512,7 @@ static int parsearg_remove(int opt)
 	switch(opt) {
 		case 'c': config->flags |= ALPM_TRANS_FLAG_CASCADE; break;
 		case 'n': config->flags |= ALPM_TRANS_FLAG_NOSAVE; break;
+		case 'o': config->flags |= ALPM_TRANS_FLAG_RECURSE_OPTDEPS; break;
 		case 's':
 		case OP_RECURSIVE:
 			/* 's' is the legacy flag here, but since recursive is used in -S without
@@ -607,6 +610,7 @@ static int parseargs(int argc, char *argv[])
 		{"nosave",     no_argument,       0, 'n'},
 		{"optdeps",    no_argument,       0, 'n'},
 		{"owns",       no_argument,       0, 'o'},
+		{"recurse-optdeps", no_argument,  0, 'o'},
 		{"file",       no_argument,       0, 'p'},
 		{"print",      no_argument,       0, 'p'},
 		{"quiet",      no_argument,       0, 'q'},

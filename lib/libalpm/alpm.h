@@ -1006,7 +1006,9 @@ typedef enum _alpm_transflag_t {
 	/** Remove also explicitly installed unneeded deps (use with ALPM_TRANS_FLAG_RECURSE). */
 	ALPM_TRANS_FLAG_RECURSEALL = (1 << 16),
 	/** Do not lock the database during the operation. */
-	ALPM_TRANS_FLAG_NOLOCK = (1 << 17)
+	ALPM_TRANS_FLAG_NOLOCK = (1 << 17),
+	/** Recurse through optdepends, even if needed by other packages. */
+	ALPM_TRANS_FLAG_RECURSE_OPTDEPS = (1 << 18)
 } alpm_transflag_t;
 
 /** Returns the bitfield of flags for the current transaction.

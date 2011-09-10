@@ -340,6 +340,11 @@ Remove Options[[RO]]
 	to a backwards '\--sync' operation, and helps keep a clean system without
 	orphans. If you want to omit condition (B), pass this option twice.
 
+*-o, \--recursive-optdeps*::
+	When recursively removing packages, also remove optional dependencies that
+	might still be in use by other packages. You will be warned which packages
+	might still optionally use the removed ones.
+
 *-u, \--unneeded*::
 	Removes targets that are not required by any other packages.
 	This is mostly useful when removing a group without using the '-c' option,
