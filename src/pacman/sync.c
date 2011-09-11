@@ -665,7 +665,7 @@ static int process_optdeps(alpm_list_t *dblist, alpm_pkg_t *pkg)
 					goto cleanup;
 				}
 
-				if(multiselect_question(array, count)) {
+				if(multiselect_question(array, count, config->handleoptdeps & PM_OPTDEPS_INSTALL)) {
 					retval = 1;
 					goto cleanup;
 				}
@@ -739,7 +739,7 @@ static int process_group(alpm_list_t *dbs, const char *group)
 			ret = 1;
 			goto cleanup;
 		}
-		if(multiselect_question(array, count)) {
+		if(multiselect_question(array, count, 1)) {
 			ret = 1;
 			free(array);
 			goto cleanup;

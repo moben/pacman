@@ -170,6 +170,9 @@ Options
 	Also, the optional dependencies of the targets won't be shown during installation.
 	If `ShowAll` and `Ask` are set, the prompt also shows optional dependencies
 	which are already installed.
+	The prompt selects none of the optional dependencies by default.
+	If `Install` and `Ask` are both specified, all optional dependencies
+	are selected by default.
 
 *SigLevel =* ...::
 	Set the default signature verification level. For more information, see

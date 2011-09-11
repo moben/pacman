@@ -1400,11 +1400,12 @@ static int multiselect_parse(char *array, int count, char *response)
 	return 0;
 }
 
-int multiselect_question(char *array, int count)
+int multiselect_question(char *array, int count, int default_state)
 {
 	char *response, *lastchar;
 	FILE *stream;
 	size_t response_len = 64;
+	default_state = default_state ? 1 : 0;
 
 	if(config->noconfirm) {
 		stream = stdout;
@@ -1422,10 +1423,14 @@ int multiselect_question(char *array, int count)
 	*lastchar = 1;
 
 	while(1) {
-		memset(array, 1, count);
+		memset(array, default_state, count);
 
 		fprintf(stream, "\n");
-		fprintf(stream, _("Enter a selection (default=all)"));
+		if(default_state) {
+			fprintf(stream, _("Enter a selection (default=all)"));
+		} else {
+			fprintf(stream, _("Enter a selection (default=none)"));
+		}
 		fprintf(stream,	": ");
 		fflush(stream);
 
