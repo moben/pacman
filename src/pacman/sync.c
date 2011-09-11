@@ -623,7 +623,75 @@ static int process_pkg(alpm_pkg_t *pkg, int as_dep)
 
 static int process_optdeps(alpm_list_t *dblist, alpm_pkg_t *pkg)
 {
-	if(config->handleoptdeps & PM_OPTDEPS_INSTALL) {
+	if(config->print == 0 && (config->handleoptdeps & PM_OPTDEPS_ASK)) {
+		alpm_list_t *optdeps = alpm_pkg_get_optdepends(pkg);
+		int retval = 0;
+
+		if(optdeps) {
+			alpm_list_t *i, *depstrings, *optstrings;
+			depstrings = optstrings = NULL;
+
+			if((config->handleoptdeps & PM_OPTDEPS_SHOWALL) == 0) {
+				alpm_db_t *db_local = alpm_option_get_localdb(config->handle);
+				alpm_list_t *pkgcache = alpm_db_get_pkgcache(db_local);
+
+				for(i = optdeps; i; i = alpm_list_next(i)) {
+					alpm_optdepend_t *optdep = i->data;
+					char *depstring = alpm_dep_compute_string(optdep->depend);
+					if(alpm_find_satisfier(pkgcache, depstring) == NULL) {
+						depstrings = alpm_list_add(depstrings, depstring);
+						optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
+					} else {
+						free(depstring);					
+					}
+				}
+			} else {
+				for(i = optdeps; i; i = alpm_list_next(i)) {
+					alpm_optdepend_t *optdep = i->data;
+					depstrings = alpm_list_add(depstrings, alpm_dep_compute_string(optdep->depend));
+					optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
+				}
+			}
+
+			int count = alpm_list_count(optstrings);
+
+			if(count) {
+				printf(_(":: %s has %d optional dependencies:\n"), alpm_pkg_get_name(pkg), count);
+				select_optdep_display(optstrings);
+
+				char *array = malloc(count);
+				if(!array) {
+					retval = 1;
+					goto cleanup;
+				}
+
+				if(multiselect_question(array, count)) {
+					retval = 1;
+					goto cleanup;
+				}
+
+				int n = 0;
+				for(i = depstrings; i; i = alpm_list_next(i)) {
+					if(array[n++] == 0) { continue; }
+				
+					char *depstring = i->data;
+					alpm_pkg_t *pkg = alpm_find_dbs_satisfier(config->handle, dblist, depstring);
+
+					if(process_pkg(pkg, 1) == 1) {
+						retval = 1;
+						goto cleanup;
+					}
+				}
+
+			cleanup:
+				free(array);
+			}
+
+			FREELIST(depstrings);
+			FREELIST(optstrings);
+			return retval;
+		}
+	} else if(config->handleoptdeps & PM_OPTDEPS_INSTALL) {
 		alpm_list_t *optdeps = alpm_pkg_get_optdepends(pkg);
 		alpm_list_t *i;
 

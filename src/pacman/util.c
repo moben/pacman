@@ -1235,35 +1235,43 @@ alpm_list_t *optdep_string_list(const alpm_list_t *optlist, int include_installe
 
 void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg)
 {
-	alpm_list_t *old, *new, *optdeps, *optstrings;
+	/* don't show optdepends if we already asked for them. '*/
+	if(!((config->handleoptdeps & PM_OPTDEPS_ASK) &&
+				alpm_find_satisfier(alpm_trans_get_add(config->handle), alpm_pkg_get_name(newpkg)))) {
+		alpm_list_t *old, *new, *optdeps, *optstrings;
 
-	old = alpm_pkg_get_optdepends(oldpkg);
-	new = alpm_pkg_get_optdepends(newpkg);
-	optdeps = alpm_list_diff(new, old, opt_cmp);
+		old = alpm_pkg_get_optdepends(oldpkg);
+		new = alpm_pkg_get_optdepends(newpkg);
+		optdeps = alpm_list_diff(new, old, opt_cmp);
 
-	optstrings = optdep_string_list(optdeps, config->handleoptdeps & PM_OPTDEPS_SHOWALL);
+		optstrings = optdep_string_list(optdeps, config->handleoptdeps & PM_OPTDEPS_SHOWALL);
 
-	if(optstrings) {
-		printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
-		list_display_linebreak("   ", optstrings);
+		if(optstrings) {
+			printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
+			list_display_linebreak("   ", optstrings);
+		}
+
+		alpm_list_free(optdeps);
+		FREELIST(optstrings);
 	}
-
-	alpm_list_free(optdeps);
-	FREELIST(optstrings);
 }
 
 void display_optdepends(alpm_pkg_t *pkg)
 {
-	alpm_list_t *optstrings;
+	/* don't show optdepends if we already asked for them. '*/
+	if(!((config->handleoptdeps & PM_OPTDEPS_ASK) &&
+				alpm_find_satisfier(alpm_trans_get_add(config->handle), alpm_pkg_get_name(pkg)))) {
+		alpm_list_t *optstrings;
 
-	optstrings = optdep_string_list(alpm_pkg_get_optdepends(pkg), config->handleoptdeps & PM_OPTDEPS_SHOWALL);
+		optstrings = optdep_string_list(alpm_pkg_get_optdepends(pkg), config->handleoptdeps & PM_OPTDEPS_SHOWALL);
 
-	if(optstrings) {
-		printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));
-		list_display_linebreak("   ", optstrings);
+		if(optstrings) {
+			printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));
+			list_display_linebreak("   ", optstrings);
+		}
+
+		FREELIST(optstrings);
 	}
-
-	FREELIST(optstrings);
 }
 
 static void display_repo_list(const char *dbname, alpm_list_t *list)
@@ -1301,6 +1309,21 @@ void select_display(const alpm_list_t *pkglist)
 	}
 	display_repo_list(dbname, list);
 	FREELIST(list);
+}
+
+void select_optdep_display(alpm_list_t *optstrings)
+{
+	const alpm_list_t *i;
+	int nth = 1;
+	char number[8];   /* 2 padding left, 2 number, 1 ')', 2 padding right, 1 '\0' */
+
+	for(i = optstrings; i; i = i->next, nth++) {
+		char *str = i->data;
+		if(str) {
+			snprintf(number, 8, "  %2d)  ", nth);
+			string_display(number, str);
+		}
+	}
 }
 
 static int parseindex(char *s, int *val, int min, int max)

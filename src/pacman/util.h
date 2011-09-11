@@ -73,6 +73,7 @@ void display_optdepends(alpm_pkg_t *pkg);
 alpm_list_t *optdep_string_list(const alpm_list_t *optdeps, int include_installed);
 void print_packages(const alpm_list_t *packages);
 void select_display(const alpm_list_t *pkglist);
+void select_optdep_display(alpm_list_t *optstrings);
 int select_question(int count);
 int multiselect_question(char *array, int count);
 int yesno(char *fmt, ...);

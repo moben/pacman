@@ -160,11 +160,16 @@ Options
 	packages are only cleaned if not installed locally and not present in any
 	known sync database.
 
-*HandleOptdeps =* ShowAll &| Install::
+*HandleOptdeps =* ShowAll &| Install &| Ask::
 	If set to `ShowAll`, show all optional dependencies on install.
 	The default is to just show uninstalled optional dependencies.
 	If set to `Install`, the optional dependencies of all targets are
 	automatically installed.
+	If set to `Ask`, display a prompt for each target, where the user can select
+	which of the optional dependencies of that target will be installed.
+	Also, the optional dependencies of the targets won't be shown during installation.
+	If `ShowAll` and `Ask` are set, the prompt also shows optional dependencies
+	which are already installed.
 
 *SigLevel =* ...::
 	Set the default signature verification level. For more information, see

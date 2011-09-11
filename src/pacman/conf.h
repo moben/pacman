@@ -144,7 +144,8 @@ enum {
 /* optdepends handling */
 enum {
 	PM_OPTDEPS_SHOWALL =  1,
-	PM_OPTDEPS_INSTALL = (1 << 1)
+	PM_OPTDEPS_INSTALL = (1 << 1),
+	PM_OPTDEPS_ASK     = (1 << 2)
 };
 
 /* global config variable */
