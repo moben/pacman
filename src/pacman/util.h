@@ -69,6 +69,7 @@ void display_targets(void);
 int str_cmp(const void *s1, const void *s2);
 void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg);
 void display_optdepends(alpm_pkg_t *pkg);
+alpm_list_t *optdep_string_list(const alpm_list_t *optdeps, int include_installed);
 void print_packages(const alpm_list_t *packages);
 void select_display(const alpm_list_t *pkglist);
 int select_question(int count);

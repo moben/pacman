@@ -160,6 +160,10 @@ Options
 	packages are only cleaned if not installed locally and not present in any
 	known sync database.
 
+*HandleOptdeps =* ShowAll::
+	If set to `ShowAll`, show all optional dependencies on install.
+	The default is to just show uninstalled optional dependencies.
+
 *SigLevel =* ...::
 	Set the default signature verification level. For more information, see
 	<<SC,Package and Database Signature Checking>> below.

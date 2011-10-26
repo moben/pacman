@@ -83,6 +83,8 @@ typedef struct __config_t {
 	unsigned short totaldownload;
 	/* select -Sc behavior */
 	unsigned short cleanmethod;
+	/* wether and how to handle optdeps */
+	unsigned short handleoptdeps;
 	alpm_list_t *holdpkg;
 	alpm_list_t *syncfirst;
 	alpm_list_t *ignorepkg;
@@ -136,6 +138,11 @@ enum {
 enum {
 	PM_CLEAN_KEEPINST = 1,
 	PM_CLEAN_KEEPCUR = (1 << 1)
+};
+
+/* optdepends handling */
+enum {
+	PM_OPTDEPS_SHOWALL = 1
 };
 
 /* global config variable */

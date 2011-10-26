@@ -1176,20 +1176,45 @@ static int opt_cmp(const void *o1, const void *o2)
 /** Creates a newly-allocated list of optdepend strings from a list of optdepends.
  * The list must be freed!
  * @param optlist an alpm_list_t of optdepends to turn into a strings
+ * @param include_installed if false, installed packages are excluded from the list.
  * @return an alpm_list_t of optdepend formatted strings with description
  */
-alpm_list_t *optdep_string_list(const alpm_list_t *optlist)
+alpm_list_t *optdep_string_list(const alpm_list_t *optlist, int include_installed)
 {
 	alpm_list_t *optstrings = NULL;
 	alpm_optdepend_t *optdep;
 	alpm_db_t *db_local = alpm_option_get_localdb(config->handle);
 
+	/* calculate these outside the loop. */
+	alpm_list_t *pkgcache = alpm_db_get_pkgcache(db_local);
+	alpm_list_t *remove = alpm_trans_get_remove(config->handle);
+	alpm_list_t *add = alpm_trans_get_add(config->handle);
+
 	/* turn optdepends list into a text list. */
 	for( ; optlist; optlist = alpm_list_next(optlist)) {
 		optdep = optlist->data;
-		if(alpm_db_get_pkg(db_local, optdep->depend->name) == NULL) {
-			optstrings = alpm_list_add(optstrings, alpm_optdep_compute_string(optdep));
+		char *depstr = alpm_dep_compute_string(optdep->depend);
+		char *tmp, *str = alpm_optdep_compute_string(optdep);
+		const char *state = NULL;
+
+		if(alpm_find_satisfier(pkgcache, depstr) && alpm_find_satisfier(remove, depstr) == NULL) {
+			state = include_installed ? _(" [installed]") : NULL;
+		} else if(alpm_find_satisfier(add, depstr)) {
+			state = include_installed ? _(" [installing]") : NULL;
+		} else if(alpm_find_satisfier(remove, depstr)) {
+			state = _(" [removing]");
+		} else {
+			optstrings = alpm_list_add(optstrings, str);
 		}
+
+		if(state) {
+			if((tmp = realloc(str, strlen(str) + strlen(state) + 1)) != NULL) {
+				strcpy(tmp + strlen(tmp), state);
+				str = tmp;
+			} /* if realloc fails, we only loose the state information, which is nonfatal. */
+			optstrings = alpm_list_add(optstrings, str);
+		}
+		free(depstr);
 	}
 
 	return optstrings;
@@ -1203,7 +1228,7 @@ void display_new_optdepends(alpm_pkg_t *oldpkg, alpm_pkg_t *newpkg)
 	new = alpm_pkg_get_optdepends(newpkg);
 	optdeps = alpm_list_diff(new, old, opt_cmp);
 
-	optstrings = optdep_string_list(optdeps);
+	optstrings = optdep_string_list(optdeps, config->handleoptdeps & PM_OPTDEPS_SHOWALL);
 
 	if(optstrings) {
 		printf(_("New optional dependencies for %s\n"), alpm_pkg_get_name(newpkg));
@@ -1218,7 +1243,7 @@ void display_optdepends(alpm_pkg_t *pkg)
 {
 	alpm_list_t *optstrings;
 
-	optstrings = optdep_string_list(alpm_pkg_get_optdepends(pkg));
+	optstrings = optdep_string_list(alpm_pkg_get_optdepends(pkg), config->handleoptdeps & PM_OPTDEPS_SHOWALL);
 
 	if(optstrings) {
 		printf(_("Optional dependencies for %s\n"), alpm_pkg_get_name(pkg));

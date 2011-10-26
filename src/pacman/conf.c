@@ -361,6 +361,21 @@ static int process_cleanmethods(alpm_list_t *values,
 	return 0;
 }
 
+static int process_handleoptdeps(alpm_list_t *actions) {
+	alpm_list_t *i;
+	for(i = actions; i; i = alpm_list_next(i)) {
+		const char *action = i->data;
+		if(strcmp(action, "ShowAll") == 0) {
+			config->handleoptdeps |= PM_OPTDEPS_SHOWALL;
+		} else {
+			pm_printf(ALPM_LOG_ERROR, _("invalid action for 'HandleOptdeps' : '%s'\n"),
+					action);
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /** Add repeating options such as NoExtract, NoUpgrade, etc to libalpm
  * settings. Refactored out of the parseconfig code since all of them did
  * the exact same thing and duplicated code.
@@ -464,6 +479,14 @@ static int _parse_options(const char *key, char *value,
 				return 1;
 			}
 			FREELIST(methods);
+		} else if(strcmp(key, "HandleOptdeps") == 0) {
+			alpm_list_t *actions = NULL;
+			setrepeatingoption(value, "HandleOptdeps", &actions);
+			if(process_handleoptdeps(actions)) {
+				FREELIST(actions);
+				return 1;
+			}
+			FREELIST(actions);
 		} else if(strcmp(key, "SigLevel") == 0) {
 			alpm_list_t *values = NULL;
 			setrepeatingoption(value, "SigLevel", &values);
