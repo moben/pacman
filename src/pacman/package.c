@@ -59,11 +59,8 @@ static void deplist_display(const char *title,
 static void optdeplist_display(const char *title,
 		alpm_list_t *optdeps)
 {
-	alpm_list_t *i, *text = NULL;
-	for(i = optdeps; i; i = alpm_list_next(i)) {
-		alpm_optdepend_t *optdep = i->data;
-		text = alpm_list_add(text, alpm_optdep_compute_string(optdep));
-	}
+	alpm_list_t *text = NULL;
+	text = optdep_string_list(optdeps, 1);
 	list_display_linebreak(title, text);
 	FREELIST(text);
 }
